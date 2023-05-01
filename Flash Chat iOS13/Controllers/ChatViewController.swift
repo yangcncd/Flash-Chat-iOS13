@@ -8,6 +8,7 @@
 
 import UIKit
 import Firebase
+import Foundation
 
 class ChatViewController: UIViewController {
     
@@ -18,9 +19,9 @@ class ChatViewController: UIViewController {
     let db = Firestore.firestore()
     
     var messages: [Message] = [
-        Message(sender: "user0430@test.com", body: "Hey"),
-        Message(sender: "user0430a@test.com", body: "Hi, how are you"),
-        Message(sender: "user0430@test.com", body: "Great GreatGreatGreatGreatGreatGreatGreatGreatGreatGreatGreatGreatGreatGreatGreatGreatGreatGreatGreatGreatGreat")
+        //        Message(sender: "user0430@test.com", body: "Hey"),
+        //        Message(sender: "user0430a@test.com", body: "Hi, how are you"),
+        //        Message(sender: "user0430@test.com", body: "Great GreatGreatGreatGreatGreatGreatGreatGreatGreatGreatGreatGreatGreatGreatGreatGreatGreatGreatGreatGreatGreat")
     ]
     
     override func viewDidLoad() {
@@ -34,16 +35,69 @@ class ChatViewController: UIViewController {
         //registry custom design file(xib file)
         tableView.register(UINib(nibName: K.cellNibName, bundle: nil), forCellReuseIdentifier: K.cellIdentifier)
         
+        loadMessages()
+        
+    }
+    
+    func loadMessages(){
+        //        messages = []
+        //        db.collection(K.FStore.collectionName).getDocuments { (querySnapshot, err) in
+        //            if let e = err {
+        //                print("There is problem to retrieve data form DB: \(e)")
+        //            } else {
+        //                if let snapshotDocuments = querySnapshot?.documents {
+        //                    for doc in snapshotDocuments {
+        //                        let data = doc.data()
+        //                        if let messageSender = data[K.FStore.senderField] as? String,
+        //                           let messageBoday = data[K.FStore.bodyField] as? String{
+        //                            let newMsg = Message(sender: messageSender, body: messageBoday)
+        //                            self.messages.append(newMsg)
+        //
+        //                            DispatchQueue.main.async {
+        //                                self.tableView.reloadData()
+        //                            }
+        //                        }
+        //                    }
+        //                }
+        //            }
+        //        }
+        db.collection(K.FStore.collectionName).order(by: K.FStore.dateField).addSnapshotListener { (querySnapshot, err) in
+            if let e = err {
+                print("There is problem to retrieve data form DB: \(e)")
+            } else {
+                self.messages = []
+                if let snapshotDocuments = querySnapshot?.documents {
+                    for doc in snapshotDocuments {
+                        let data = doc.data()
+                        if let messageSender = data[K.FStore.senderField] as? String,
+                           let messageBoday = data[K.FStore.bodyField] as? String{
+                            let newMsg = Message(sender: messageSender, body: messageBoday)
+                            self.messages.append(newMsg)
+                            
+                            DispatchQueue.main.async {
+                                self.tableView.reloadData()
+                            }
+                        }
+                    }
+                }
+            }
+        } // end of closure
+        
     }
     
     @IBAction func sendPressed(_ sender: UIButton) {
         if let messageBody = messageTextfield.text, let messageSender = Auth.auth().currentUser?.email{
             
             db.collection(K.FStore.collectionName).addDocument(
-                data: [K.FStore.senderField : messageSender, K.FStore.bodyField: messageBody]) { err in
+                data: [
+                    K.FStore.senderField : messageSender,
+                    K.FStore.bodyField: messageBody,
+                    K.FStore.dateField: Date().timeIntervalSince1970
+                    ]) { err in
                     if let e = err {
                         print("Error saving to Firestore: \(e)")
                     } else {
+                        self.messageTextfield.text = ""
                         print("Message successfully saved!")
                     }
                 }
