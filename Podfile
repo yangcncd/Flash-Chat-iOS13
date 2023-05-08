@@ -21,5 +21,8 @@ target 'Flash Chat iOS13' do
     pod 'FirebaseAppCheckInterop', :modular_headers => true
     pod 'FirebaseAuthInterop', :modular_headers => true
     pod 'GoogleUtilities', :modular_headers => true
+    
+    pod 'RxSwift', '6.5.0'
+    pod 'RxCocoa', '6.5.0'
 
 end
